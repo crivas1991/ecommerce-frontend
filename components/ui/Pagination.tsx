@@ -23,7 +23,7 @@ export function Pagination({ basePath, page, lastPage, params = {} }: Pagination
   const linkClass =
     "rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50";
   const disabledClass =
-    "rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm text-slate-400";
+    "cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm text-slate-600";
 
   return (
     <nav aria-label="Paginación" className="flex items-center justify-center gap-3">

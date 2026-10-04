@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { logoutAction } from "@/app/actions/auth";
 import { getCurrentUser } from "@/lib/session";
 
 export async function UserMenu() {
@@ -33,7 +32,7 @@ export async function UserMenu() {
       >
         {user.name}
       </Link>
-      <form action={logoutAction}>
+      <form action="/api/auth/logout" method="post">
         <button type="submit" className="text-slate-500 hover:text-red-600">
           Salir
         </button>

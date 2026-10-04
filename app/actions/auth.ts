@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { ActionResult, AuthResponse } from "@/types";
 import { apiFetch } from "@/lib/api/client";
 import { toActionResult } from "@/lib/api/errors";
-import { clearSession, safeRedirectPath, setSession } from "@/lib/session";
+import { safeRedirectPath, setSession } from "@/lib/session";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "");
@@ -47,15 +47,4 @@ export async function registerAction(formData: FormData): Promise<ActionResult> 
 
   revalidatePath("/", "layout");
   redirect(safeRedirectPath(formData.get("next")));
-}
-
-export async function logoutAction() {
-  try {
-    await apiFetch("/auth/logout", { method: "POST" }); // revoca el token en Laravel
-  } catch {
-    // Aunque la API falle (token ya vencido), cerramos la sesión local igual.
-  }
-  await clearSession();
-  revalidatePath("/", "layout");
-  redirect("/");
 }

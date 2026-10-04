@@ -23,7 +23,10 @@ export async function generateMetadata({ params }: PageProps<"/products/[id]">):
   const { id } = await params;
   try {
     const product = await getProduct(toPositiveInt(id, 0));
-    return { title: product.name, description: product.description ?? undefined };
+    return {
+      title: product.name,
+      description: product.description ?? `Compra ${product.name} en CARC STORE.`,
+    };
   } catch {
     return { title: "Producto" };
   }
@@ -59,7 +62,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[id]"
           <p className="whitespace-pre-line text-slate-600">
             {product.description ?? "Este producto no tiene descripción."}
           </p>
-          <p className={`text-sm ${product.stock > 0 ? "text-emerald-600" : "text-red-600"}`}>
+          <p className={`text-sm ${product.stock > 0 ? "text-emerald-700" : "text-red-600"}`}>
             {product.stock > 0 ? `${product.stock} unidades en stock` : "Agotado"}
           </p>
           <div className="mt-auto max-w-xs">

@@ -41,11 +41,18 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   }
 });
 
-/** Para páginas protegidas: redirige a /login si no hay sesión válida. */
+/**
+ * Para páginas protegidas: redirige a /login si no hay sesión válida.
+ * Si la cookie existe pero la API ya no la acepta (vencida/revocada), pasa por
+ * /api/auth/expired para eliminarla.
+ */
 export async function requireUser(returnTo: string): Promise<User> {
   const user = await getCurrentUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(returnTo)}`);
-  return user;
+  if (user) return user;
+
+  const next = encodeURIComponent(returnTo);
+  const hasStaleCookie = (await cookies()).has(TOKEN_COOKIE);
+  redirect(hasStaleCookie ? `/api/auth/expired?next=${next}` : `/login?next=${next}`);
 }
 
 /** Solo acepta rutas internas para evitar open redirects en ?next=. */

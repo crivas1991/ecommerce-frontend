@@ -10,7 +10,7 @@ Stripe → confirmación e historial.
 | --- | --- |
 | Lecturas (catálogo, detalle, historial) | **Server Components** con `fetch` en el servidor (`lib/api/*`) |
 | Mutaciones (login, registro, crear orden, pagar) | **Server Actions** (`app/actions/*`) llamadas desde formularios con `onSubmit` + `React.SubmitEvent` |
-| Token de sesión | Cookie **httpOnly** (`token`) creada desde Server Actions; el navegador nunca ve el token |
+| Token de sesión | Cookie **httpOnly** (`token`, `SameSite=Lax`, `Secure` en producción): la crean las Server Actions de login/registro y la eliminan **Route Handlers** (`/api/auth/logout`, `/api/auth/expired`). El navegador nunca ve el token |
 | Rutas protegidas | `proxy.ts` (cookie presente) + `requireUser()` en cada página (validez real contra `/auth/me`) |
 | Carrito | Estado local (`localStorage`) con `useSyncExternalStore` (`lib/cart-store.ts`) |
 | Datos al día tras mutaciones | `updateTag()` / `revalidatePath()` en `app/actions/orders.ts` |
@@ -75,8 +75,25 @@ npm start
 | `/checkout/success?order_id=` | Confirmación de compra (`GET /orders/{id}`) | Protegido |
 | `/orders` | Historial del usuario (`GET /orders/user/{id}`) | Protegido |
 | `/orders/[id]` | Detalle de una orden, con botón de pago si está pendiente | Protegido |
+| `/profile` | Mi perfil: datos de la cuenta (solo lectura) | Protegido |
 
 Endpoints adicionales usados: `GET /auth/me` (sesión) y `POST /auth/logout` (revoca el token).
+
+### Route Handlers del frontend
+
+| Ruta | Método | Función |
+| --- | --- | --- |
+| `/api/auth/logout` | POST | Revoca el token en la API, borra la cookie httpOnly y redirige a `/` |
+| `/api/auth/expired` | GET | Sesión vencida/revocada: borra la cookie obsoleta y redirige a `/login?next=...` |
+
+### Flujo de autenticación
+
+1. `/login` y `/register` envían el formulario (`onSubmit` con `React.SubmitEvent`) a una
+   **Server Action** que llama a la API; si responde con un token, se guarda en la cookie httpOnly.
+2. Los errores de la API (422, credenciales inválidas, cuenta inactiva) se muestran por campo y
+   tras el éxito se redirige a la ruta original (`?next=`, validada para evitar open redirects).
+3. `proxy.ts` bloquea rápido las rutas protegidas sin cookie, y `requireUser()` valida el token
+   contra `/auth/me` en cada página protegida.
 
 ## Flujo de pago con Stripe
 
@@ -92,8 +109,28 @@ Endpoints adicionales usados: `GET /auth/me` (sesión) y `POST /auth/logout` (re
 > Backend: la API usa `FRONTEND_URL` (por defecto `http://localhost:3000`) para construir
 > `success_url` (`/checkout/success?order_id={id}`) y `cancel_url` (`/orders/{id}`).
 
-## Evidencias para la entrega
+## Evidencias
 
-- [ ] Captura de los endpoints consumidos en Swagger (`/api/documentation`).
-- [ ] Captura / video del flujo completo (catálogo → carrito → checkout → Stripe → confirmación).
-- [ ] Reporte Lighthouse (ejecutar sobre `npm run build && npm start`, no sobre `npm run dev`).
+### Rendimiento (Lighthouse)
+
+Medido sobre el build de producción (`npm run build && npm start`), con la API local activa.
+Reportes completos en la carpeta [`docs/`](./docs):
+
+| Página | Dispositivo | Rendimiento | Accesibilidad | Buenas prácticas | SEO | LCP | TBT | CLS |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Catálogo `/` | Escritorio ([reporte](./docs/lighthouse-catalogo-escritorio.report.html)) | 100 | 100 | 100 | 100 | 0.7 s | 10 ms | 0 |
+| Catálogo `/` | Móvil ([reporte](./docs/lighthouse-catalogo-movil.report.html)) | 92 | 100 | 100 | 100 | 3.0 s | 110 ms | 0 |
+| Producto `/products/1` | Escritorio ([reporte](./docs/lighthouse-producto-escritorio.report.html)) | 100 | 100 | 100 | 100 | 0.6 s | 0 ms | 0 |
+| Producto `/products/1` | Móvil ([reporte](./docs/lighthouse-producto-movil.report.html)) | 97 | 100 | 100 | 100 | 2.4 s | 100 ms | 0 |
+
+> Los `.html` se abren en el navegador (descárgalos desde GitHub con *Download raw file*; GitHub
+> no los renderiza). Los `.json` incluyen los mismos datos en crudo.
+
+### Endpoints consumidos (Swagger)
+
+Captura de la documentación de la API (`/api/documentation`): _agregar en `docs/swagger-endpoints.png`_.
+
+### Flujo completo de compra
+
+Captura o video del recorrido catálogo → carrito → checkout → Stripe → confirmación:
+_agregar en `docs/flujo-compra.png` (o `.mp4`)_.
